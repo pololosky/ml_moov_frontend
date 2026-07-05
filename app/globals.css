@@ -1,33 +1,56 @@
 @import "tailwindcss";
 
-/* ── Désactive le mode sombre automatique de Tailwind ── */
+/* ── Désactive le dark mode automatique ── */
 @media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: light;
-  }
+  :root { color-scheme: light; }
 }
 
 :root {
   color-scheme: light;
-  --moov-blue: #004B8D;
-  --moov-orange: #F15A24;
-  --moov-blue-light: #E8F0F9;
-  --moov-orange-light: #FEF0EA;
+
+  /* Palette Moov Africa Togo */
+  --moov-blue:         #0693E3;
+  --moov-blue-dark:    #0578C0;
+  --moov-blue-light:   #E8F5FD;
+  --moov-blue-muted:   #D0EAFB;
+
+  --moov-orange:       #E96805;
+  --moov-orange-dark:  #C85A04;
+  --moov-orange-light: #FEF3E8;
+  --moov-orange-muted: #FDDCC0;
+
+  /* Neutres */
+  --surface:           #FFFFFF;
+  --surface-2:         #F7F9FC;
+  --border:            #E8ECF0;
+  --border-strong:     #D0D7DF;
+  --text-primary:      #0F1923;
+  --text-secondary:    #4A5568;
+  --text-muted:        #8A97A8;
+
+  /* Sémantiques */
+  --success:           #16A34A;
+  --success-bg:        #F0FDF4;
+  --danger:            #DC2626;
+  --danger-bg:         #FEF2F2;
+  --warning:           #D97706;
+  --warning-bg:        #FFFBEB;
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+*, *::before, *::after { box-sizing: border-box; }
 
-html {
-  background-color: #ffffff;
-}
+html { background: var(--surface-2); }
 
 body {
-  background-color: #F4F6FA;
-  color: #1C1C2E;
+  background: var(--surface-2);
+  color: var(--text-primary);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Scrollbar discrète */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }

@@ -1,27 +1,44 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ShieldAlert, AlertTriangle, CheckCircle, TrendingUp, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import StatCard from "@/components/ui/StatCard";
-import Badge from "@/components/ui/Badge";
-import RunButton from "@/components/ui/RunButton";
+import { ShieldAlert, AlertTriangle, CheckCircle, BarChart3 } from "lucide-react";
+import StatCard   from "@/components/ui/StatCard";
+import Badge      from "@/components/ui/Badge";
+import RunButton  from "@/components/ui/RunButton";
 import PageHeader from "@/components/ui/PageHeader";
+import DataTable  from "@/components/ui/DataTable";
+import Pagination from "@/components/ui/Pagination";
 import {
-  getFraudeStats, getFraudePredictions, runFraudeDetection,
-  type FraudeStats, type FraudeRow, type PaginatedResult,
+  getFraudeStats, getFraudePredictions, runFraudeDetection, updateFraudeStatut,
+  type FraudeStats, type FraudePrediction, type PaginatedResult,
 } from "@/lib/api";
 
-const FILTERS = [
-  { label: "Toutes", value: undefined },
-  { label: "Frauduleuses", value: 1 },
-  { label: "Normales", value: 0 },
+const BLUE   = "#0693E3";
+const ORANGE = "#E96805";
+
+const FLAG_FILTERS = [
+  { label: "Toutes",        value: undefined },
+  { label: "Frauduleuses",  value: 1 },
+  { label: "Normales",      value: 0 },
 ];
 
+const STATUT_FILTERS = [
+  { label: "Tous statuts", value: undefined },
+  { label: "Nouvelle",     value: "Nouvelle" },
+  { label: "Traitée",      value: "Traitee" },
+  { label: "Ignorée",      value: "Ignoree" },
+];
+
+const TYPE_TX: Record<number, string> = {
+  0: "Recharge", 1: "Transfert P2P", 2: "Cash-out", 3: "Cash-in", 4: "Forfait",
+};
+
 export default function FraudeDashboard() {
-  const [stats, setStats] = useState<FraudeStats | null>(null);
-  const [result, setResult] = useState<PaginatedResult<FraudeRow> | null>(null);
-  const [page, setPage] = useState(1);
-  const [filter, setFilter] = useState<number | undefined>(undefined);
+  const [stats,   setStats]   = useState<FraudeStats | null>(null);
+  const [result,  setResult]  = useState<PaginatedResult<FraudePrediction> | null>(null);
+  const [page,    setPage]    = useState(1);
+  const [flagF,   setFlagF]   = useState<number | undefined>(undefined);
+  const [statutF, setStatutF] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -29,26 +46,28 @@ export default function FraudeDashboard() {
     try {
       const [s, r] = await Promise.all([
         getFraudeStats(),
-        getFraudePredictions(page, 50, filter),
+        getFraudePredictions(page, 50, flagF, statutF),
       ]);
       setStats(s);
       setResult(r);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, filter]);
+    } catch (e) { console.error(e); }
+    finally     { setLoading(false); }
+  }, [page, flagF, statutF]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleStatutChange = async (predId: number, statut: string) => {
+    await updateFraudeStatut(predId, statut);
+    await fetchData();
+  };
 
   const totalPages = result ? Math.ceil(result.total / 50) : 1;
 
   return (
-    <div className="p-8 space-y-6 max-w-7xl">
+    <div style={{ padding: "32px 36px", maxWidth: 1200 }}>
       <PageHeader
         title="Détection de Fraude"
-        description="Analyse des transactions suspectes des agents"
+        description="Analyse des transactions suspectes des agents de distribution"
         icon={ShieldAlert}
         accent="orange"
         action={
@@ -59,141 +78,124 @@ export default function FraudeDashboard() {
         }
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Transactions analysées" value={stats?.total ?? 0} icon={ShieldAlert} accent="blue" />
+      {/* KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
+        <StatCard title="Transactions analysées" value={stats?.total ?? 0}       icon={ShieldAlert} accent="blue" />
         <StatCard
           title="Frauduleuses"
           value={stats?.frauduleuses ?? 0}
-          subtitle={`${stats?.taux_fraude_pct ?? 0}% du total`}
+          subtitle={`Taux : ${stats?.taux_fraude_pct ?? 0}%`}
           icon={AlertTriangle}
           accent="red"
         />
-        <StatCard title="Normales" value={stats?.normales ?? 0} icon={CheckCircle} accent="green" />
+        <StatCard title="Normales"    value={stats?.normales ?? 0}       icon={CheckCircle} accent="green" />
         <StatCard
-          title="Montant moyen"
-          value={stats?.montant_moyen ? `${Math.round(Number(stats.montant_moyen)).toLocaleString("fr-FR")} FCFA` : "—"}
-          icon={TrendingUp}
+          title="En attente"
+          value={stats?.alertes_en_attente ?? 0}
+          subtitle="Alertes non traitées"
+          icon={BarChart3}
           accent="orange"
         />
       </div>
 
-      {/* Filtres */}
-      <div className="flex items-center gap-2">
-        {FILTERS.map(({ label, value }) => (
-          <button
-            key={label}
-            onClick={() => { setFilter(value); setPage(1); }}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all border ${
-              filter === value
-                ? "text-white border-transparent shadow-sm"
-                : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
-            }`}
-            style={filter === value ? { backgroundColor: "#004B8D" } : undefined}
-          >
-            {label}
-          </button>
-        ))}
+      {/* Filtres flag */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+        {FLAG_FILTERS.map(({ label, value }) => {
+          const active = flagF === value;
+          return (
+            <button key={label} onClick={() => { setFlagF(value); setPage(1); }} style={{
+              padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+              border: active ? "none" : "1px solid #E8ECF0",
+              background: active ? ORANGE : "#FFF", color: active ? "#FFF" : "#4A5568",
+              cursor: "pointer",
+            }}>
+              {label}
+            </button>
+          );
+        })}
+        <div style={{ width: 1, background: "#E8ECF0", margin: "0 4px" }} />
+        {STATUT_FILTERS.map(({ label, value }) => {
+          const active = statutF === value;
+          return (
+            <button key={label} onClick={() => { setStatutF(value); setPage(1); }} style={{
+              padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+              border: active ? "none" : "1px solid #E8ECF0",
+              background: active ? BLUE : "#FFF", color: active ? "#FFF" : "#4A5568",
+              cursor: "pointer",
+            }}>
+              {label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="flex justify-center items-center py-16">
-            <Loader2 size={24} className="animate-spin text-[#004B8D]" />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-50">
-                  {["Transaction", "Agent", "Statut", "Type", "Montant (FCFA)", "Région", "Vélocité 24h", "Écart zone", "Ratio plafond", "Dépassement"].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {result?.data.map((row) => (
-                  <tr
-                    key={row.transaction_id}
-                    className={`transition-colors ${
-                      row.fraude_flag === 1
-                        ? "bg-red-50/30 hover:bg-red-50/50"
-                        : "hover:bg-gray-50/50"
-                    }`}
-                  >
-                    <td className="px-4 py-3 font-mono text-xs text-gray-400">{row.transaction_id}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-400">{row.agent_id}</td>
-                    <td className="px-4 py-3">
-                      {row.fraude_flag === 1 ? (
-                        <Badge label="Frauduleuse" variant="red" />
-                      ) : (
-                        <Badge label="Normale" variant="green" />
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-600">{row.type_label}</td>
-                    <td className="px-4 py-3 font-medium text-gray-700">
-                      {Number(row.montant_fcfa).toLocaleString("fr-FR")}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-600">{row.region_label}</td>
-                    <td className="px-4 py-3">
-                      <span className={row.nb_tx_24h > 10 ? "font-semibold text-[#F15A24]" : "text-gray-600"}>
-                        {row.nb_tx_24h}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {row.ecart_zone_habituelle === 1 ? (
-                        <Badge label="Oui" variant="orange" />
-                      ) : (
-                        <Badge label="Non" variant="gray" />
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      <span className={Number(row.ratio_montant_plafond) > 1 ? "font-semibold text-red-500" : ""}>
-                        {Number(row.ratio_montant_plafond).toFixed(3)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {Number(row.depassement_plafond) > 0 ? (
-                        <span className="text-red-500 font-medium">
-                          +{Number(row.depassement_plafond).toLocaleString("fr-FR")}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {!result?.data.length && (
-                  <tr>
-                    <td colSpan={10} className="px-4 py-12 text-center text-gray-400 text-sm">
-                      Aucune donnée. Importez les transactions puis lancez la détection.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Tableau */}
+      <DataTable
+        loading={loading}
+        rowKey={(r) => r.id}
+        rows={result?.data ?? []}
+        emptyMessage="Aucune prédiction. Importez les transactions puis lancez la détection."
+        columns={[
+          { key: "transaction_id", header: "Tx ID",
+            render: (r) => <span style={{ fontFamily: "monospace", fontSize: 11, color: "#8A97A8" }}>{r.transaction_id}</span> },
+          { key: "fraude_flag", header: "Statut ML",
+            render: (r) => r.fraude_flag === 1
+              ? <Badge label="Frauduleuse" variant="red" />
+              : <Badge label="Normale" variant="green" /> },
+          { key: "score_fraude", header: "Score", align: "right",
+            render: (r) => {
+              const s = Number(r.score_fraude);
+              const c = s >= 0.7 ? "#DC2626" : s >= 0.5 ? ORANGE : "#16A34A";
+              return <span style={{ fontWeight: 700, color: c, fontSize: 13 }}>{s.toFixed(3)}</span>;
+            } },
+          { key: "agent_id", header: "Agent",
+            render: (r) => <span style={{ fontFamily: "monospace", fontSize: 11, color: "#4A5568" }}>{r.agent_id ?? "—"}</span> },
+          { key: "type_transaction", header: "Type",
+            render: (r) => <span style={{ fontSize: 12, color: "#4A5568" }}>
+              {TYPE_TX[r.type_transaction ?? -1] ?? "—"}
+            </span> },
+          { key: "montant_fcfa", header: "Montant (FCFA)", align: "right",
+            render: (r) => <span style={{ fontWeight: 600, color: BLUE }}>
+              {r.montant_fcfa != null ? Number(r.montant_fcfa).toLocaleString("fr-FR") : "—"}
+            </span> },
+          { key: "nb_tx_24h", header: "Vélocité 24h", align: "right",
+            render: (r) => <span style={{ color: (r.nb_tx_24h ?? 0) > 10 ? ORANGE : "#4A5568", fontWeight: (r.nb_tx_24h ?? 0) > 10 ? 700 : 400 }}>
+              {r.nb_tx_24h ?? 0}
+            </span> },
+          { key: "ratio_montant_plafond", header: "Ratio plafond", align: "right",
+            render: (r) => {
+              const v = Number(r.ratio_montant_plafond ?? 0);
+              return <span style={{ color: v > 1 ? "#DC2626" : "#4A5568", fontWeight: v > 1 ? 700 : 400 }}>{v.toFixed(3)}</span>;
+            } },
+          { key: "statut", header: "Traitement",
+            render: (r) => (
+              <select
+                value={r.statut}
+                onChange={(e) => handleStatutChange(r.id, e.target.value)}
+                style={{
+                  border: "1px solid #E8ECF0", borderRadius: 6,
+                  padding: "3px 8px", fontSize: 11, fontWeight: 600,
+                  background: r.statut === "Nouvelle" ? "#FEF3E8"
+                            : r.statut === "Traitee"  ? "#F0FDF4" : "#F1F5F9",
+                  color:      r.statut === "Nouvelle" ? "#C85A04"
+                            : r.statut === "Traitee"  ? "#15803D" : "#64748B",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="Nouvelle">Nouvelle</option>
+                <option value="Traitee">Traitée</option>
+                <option value="Ignoree">Ignorée</option>
+              </select>
+            ) },
+        ]}
+      />
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-400">
-            {result?.total.toLocaleString("fr-FR")} résultats · Page {page}/{totalPages}
-          </p>
-          <div className="flex gap-1.5">
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40">
-              <ChevronLeft size={16} />
-            </button>
-            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40">
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={page} totalPages={totalPages}
+        total={result?.total ?? 0}
+        onPrev={() => setPage((p) => Math.max(1, p - 1))}
+        onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+      />
     </div>
   );
 }

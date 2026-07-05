@@ -1,47 +1,55 @@
 import { LucideIcon } from "lucide-react";
 
+type Accent = "blue" | "orange" | "green" | "red" | "gray";
+
+const ACCENTS: Record<Accent, { bg: string; icon: string; value: string; border: string }> = {
+  blue:   { bg: "#E8F5FD", icon: "#0693E3", value: "#0693E3", border: "#D0EAFB" },
+  orange: { bg: "#FEF3E8", icon: "#E96805", value: "#E96805", border: "#FDDCC0" },
+  green:  { bg: "#F0FDF4", icon: "#16A34A", value: "#16A34A", border: "#BBF7D0" },
+  red:    { bg: "#FEF2F2", icon: "#DC2626", value: "#DC2626", border: "#FECACA" },
+  gray:   { bg: "#F7F9FC", icon: "#8A97A8", value: "#4A5568", border: "#E8ECF0" },
+};
+
 interface StatCardProps {
   title: string;
   value: string | number;
   subtitle?: string;
   icon: LucideIcon;
-  accent?: "blue" | "orange" | "green" | "red";
+  accent?: Accent;
 }
 
-const accentConfig = {
-  blue:   { bg: "#E8F0F9", icon: "#004B8D", value: "#004B8D" },
-  orange: { bg: "#FEF0EA", icon: "#F15A24", value: "#F15A24" },
-  green:  { bg: "#ECFDF5", icon: "#059669", value: "#047857" },
-  red:    { bg: "#FEF2F2", icon: "#EF4444", value: "#DC2626" },
-};
-
-export default function StatCard({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  accent = "blue",
-}: StatCardProps) {
-  const cfg = accentConfig[accent];
-
+export default function StatCard({ title, value, subtitle, icon: Icon, accent = "blue" }: StatCardProps) {
+  const a = ACCENTS[accent];
   return (
-    <div
-      className="rounded-xl p-5 flex items-start gap-4"
-      style={{ backgroundColor: "#ffffff", border: "1px solid #EAECF0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
-    >
-      <div
-        className="p-2.5 rounded-lg shrink-0"
-        style={{ backgroundColor: cfg.bg }}
-      >
-        <Icon size={20} color={cfg.icon} strokeWidth={2} />
+    <div style={{
+      background: "#FFFFFF",
+      border: "1px solid #E8ECF0",
+      borderRadius: 12,
+      padding: "16px 18px",
+      display: "flex",
+      alignItems: "flex-start",
+      gap: 14,
+      boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+    }}>
+      <div style={{
+        width: 40, height: 40,
+        borderRadius: 10,
+        background: a.bg,
+        border: `1px solid ${a.border}`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        flexShrink: 0,
+      }}>
+        <Icon size={18} color={a.icon} strokeWidth={2} />
       </div>
-      <div className="min-w-0">
-        <p className="text-xs font-medium truncate" style={{ color: "#9CA3AF" }}>{title}</p>
-        <p className="mt-0.5 text-2xl font-bold leading-tight" style={{ color: cfg.value }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 11, fontWeight: 500, color: "#8A97A8", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {title}
+        </div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: a.value, lineHeight: 1.2, marginTop: 3 }}>
           {typeof value === "number" ? value.toLocaleString("fr-FR") : value}
-        </p>
+        </div>
         {subtitle && (
-          <p className="mt-0.5 text-xs truncate" style={{ color: "#9CA3AF" }}>{subtitle}</p>
+          <div style={{ fontSize: 11, color: "#8A97A8", marginTop: 2 }}>{subtitle}</div>
         )}
       </div>
     </div>

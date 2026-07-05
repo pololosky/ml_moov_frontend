@@ -3,187 +3,240 @@
 import { useEffect, useState } from "react";
 import {
   Users, UserCheck, Building2, CreditCard,
-  TrendingDown, ShieldAlert, PieChart, Loader2, LayoutDashboard,
+  TrendingDown, ShieldAlert, PieChart, Loader2,
+  LayoutDashboard, Clock, AlertCircle, RefreshCw,
 } from "lucide-react";
-import StatCard from "@/components/ui/StatCard";
+import StatCard   from "@/components/ui/StatCard";
 import PageHeader from "@/components/ui/PageHeader";
+import DataTable  from "@/components/ui/DataTable";
 import {
-  getDashboardOverview, getChurnByRegion, getFraudeByType,
-  type DashboardOverview, type ChurnByRegion, type FraudeByType,
+  getDashboardOverview, getChurnByRegion, getFraudeByType, getRecentRuns,
+  type DashboardOverview, type ChurnByRegion, type FraudeByType, type ModelRun,
 } from "@/lib/api";
 
-// ─── composants locaux inline-styled ─────────────────────────────────────────
+const BLUE   = "#0693E3";
+const ORANGE = "#E96805";
 
-function Card({ children }: { children: React.ReactNode }) {
+function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ backgroundColor: "#ffffff", border: "1px solid #EAECF0", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+    <h2 style={{ fontSize: 12, fontWeight: 700, color: "#8A97A8", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 12px" }}>
       {children}
-    </div>
-  );
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "#9CA3AF" }}>
-      {children}
-    </p>
+    </h2>
   );
 }
 
 function ProgressBar({ value, color }: { value: number; color: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="w-20 rounded-full h-1.5" style={{ backgroundColor: "#F3F4F6" }}>
-        <div className="h-1.5 rounded-full transition-all" style={{ width: `${Math.min(value, 100)}%`, backgroundColor: color }} />
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ flex: 1, height: 5, background: "#F1F5F9", borderRadius: 3, overflow: "hidden", maxWidth: 80 }}>
+        <div style={{ height: "100%", width: `${Math.min(value, 100)}%`, background: color, borderRadius: 3, transition: "width 0.3s" }} />
       </div>
-      <span className="text-xs w-10" style={{ color: "#6B7280" }}>{value}%</span>
+      <span style={{ fontSize: 11, color: "#8A97A8", minWidth: 32, textAlign: "right" }}>{value}%</span>
     </div>
   );
 }
 
-// ─── composant principal ──────────────────────────────────────────────────────
+function PendingAlert({ count, label }: { count: number; label: string }) {
+  if (!count) return null;
+  return (
+    <div style={{
+      display: "inline-flex", alignItems: "center", gap: 6,
+      padding: "5px 12px", borderRadius: 20,
+      background: "#FEF3E8", border: "1px solid #FDDCC0",
+      fontSize: 11, fontWeight: 600, color: "#C85A04",
+    }}>
+      <AlertCircle size={12} />
+      {count.toLocaleString("fr-FR")} {label}
+    </div>
+  );
+}
 
 export default function DashboardOverview() {
-  const [overview, setOverview] = useState<DashboardOverview | null>(null);
+  const [overview,      setOverview]      = useState<DashboardOverview | null>(null);
   const [churnByRegion, setChurnByRegion] = useState<ChurnByRegion[]>([]);
-  const [fraudeByType, setFraudeByType] = useState<FraudeByType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [fraudeByType,  setFraudeByType]  = useState<FraudeByType[]>([]);
+  const [recentRuns,    setRecentRuns]    = useState<ModelRun[]>([]);
+  const [loading,       setLoading]       = useState(true);
 
-  useEffect(() => {
-    Promise.all([getDashboardOverview(), getChurnByRegion(), getFraudeByType()])
-      .then(([o, c, f]) => { setOverview(o); setChurnByRegion(c); setFraudeByType(f); })
+  const load = () => {
+    setLoading(true);
+    Promise.all([
+      getDashboardOverview(),
+      getChurnByRegion(),
+      getFraudeByType(),
+      getRecentRuns(5),
+    ])
+      .then(([o, c, f, r]) => { setOverview(o); setChurnByRegion(c); setFraudeByType(f); setRecentRuns(r); })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  };
 
-  if (loading) {
+  useEffect(() => { load(); }, []);
+
+  if (loading && !overview) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 size={28} className="animate-spin" style={{ color: "#004B8D" }} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300 }}>
+        <Loader2 size={28} className="animate-spin" style={{ color: BLUE }} />
       </div>
     );
   }
 
-  return (
-    <div className="p-8 space-y-8 max-w-7xl">
-      <PageHeader
-        title="Dashboard"
-        description="Vue globale de la plateforme ML Moov Africa Togo"
-        icon={LayoutDashboard}
-        accent="blue"
-      />
+  const CAS_STYLE: Record<string, { bg: string; color: string }> = {
+    churn:        { bg: "#FEF3E8", color: ORANGE },
+    fraude:       { bg: "#FEF2F2", color: "#DC2626" },
+    segmentation: { bg: "#E8F5FD", color: BLUE },
+  };
 
-      {/* KPIs données */}
-      <section>
-        <SectionLabel>Données</SectionLabel>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Clients" value={overview?.nb_clients ?? 0} icon={Users} accent="blue" />
-          <StatCard title="Clients actifs" value={overview?.nb_clients_actifs ?? 0} icon={UserCheck} accent="green" />
-          <StatCard title="Agents" value={overview?.nb_agents ?? 0} icon={Building2} accent="blue" />
-          <StatCard title="Transactions" value={overview?.nb_transactions ?? 0} icon={CreditCard} accent="orange" />
+  return (
+    <div style={{ padding: "32px 36px", maxWidth: 1200 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
+        <PageHeader
+          title="Dashboard"
+          description="Vue globale de la plateforme ML Analytics — Moov Africa Togo"
+          icon={LayoutDashboard}
+          accent="blue"
+        />
+        <button
+          onClick={load}
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "7px 14px", borderRadius: 8,
+            background: "#fff", border: "1px solid #E8ECF0",
+            color: "#4A5568", fontSize: 12, fontWeight: 500,
+            cursor: "pointer",
+          }}
+        >
+          <RefreshCw size={13} /> Actualiser
+        </button>
+      </div>
+
+      {/* Alertes pending */}
+      {overview && (overview.churn_pending > 0 || overview.seg_pending > 0 || overview.fraude_pending > 0) && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 28 }}>
+          <PendingAlert count={overview.churn_pending}  label="clients churn à recalculer" />
+          <PendingAlert count={overview.seg_pending}    label="clients seg. à recalculer" />
+          <PendingAlert count={overview.fraude_pending} label="transactions non scorées" />
         </div>
-      </section>
+      )}
+
+      {/* KPIs sources */}
+      <div style={{ marginBottom: 32 }}>
+        <SectionTitle>Données sources</SectionTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+          <StatCard title="Clients total"   value={overview?.nb_clients ?? 0}        icon={Users}     accent="blue" />
+          <StatCard title="Clients actifs"  value={overview?.nb_clients_actifs ?? 0}  icon={UserCheck} accent="green" />
+          <StatCard title="Agents"          value={overview?.nb_agents ?? 0}           icon={Building2} accent="blue" />
+          <StatCard title="Transactions"    value={overview?.nb_transactions ?? 0}     icon={CreditCard} accent="orange" />
+        </div>
+      </div>
 
       {/* KPIs ML */}
-      <section>
-        <SectionLabel>Prédictions ML</SectionLabel>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div style={{ marginBottom: 32 }}>
+        <SectionTitle>Prédictions actives (is_latest)</SectionTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
           <StatCard
-            title="Clients analysés — Churn"
-            value={overview?.nb_churn_total ?? 0}
-            subtitle={`${overview?.taux_churn_pct ?? 0}% taux de churn`}
+            title="Churn — analysés"
+            value={overview?.nb_churn_analyses ?? 0}
+            subtitle={`Taux churn : ${overview?.taux_churn_pct ?? 0}%`}
             icon={TrendingDown}
             accent="orange"
           />
           <StatCard
-            title="Transactions analysées — Fraude"
-            value={overview?.nb_fraude_total ?? 0}
-            subtitle={`${overview?.taux_fraude_pct ?? 0}% frauduleuses`}
+            title="Fraude — analysées"
+            value={overview?.nb_fraude_analyses ?? 0}
+            subtitle={`Frauduleuses : ${overview?.taux_fraude_pct ?? 0}%`}
             icon={ShieldAlert}
             accent="red"
           />
           <StatCard
-            title="Clients segmentés"
-            value={overview?.nb_segmentation ?? 0}
+            title="Segmentation"
+            value={overview?.nb_segmentes ?? 0}
+            subtitle="Clients segmentés"
             icon={PieChart}
             accent="blue"
           />
         </div>
-      </section>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Churn par région */}
+      {/* Tableaux analytics */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 32 }}>
         {churnByRegion.length > 0 && (
-          <section>
-            <SectionLabel>Churn par région</SectionLabel>
-            <Card>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: "1px solid #F3F4F6" }}>
-                    {["Région", "Clients", "Taux churn"].map((h) => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" style={{ color: "#9CA3AF" }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {churnByRegion.map((r, i) => (
-                    <tr
-                      key={r.region}
-                      style={{ borderBottom: i < churnByRegion.length - 1 ? "1px solid #F9FAFB" : "none" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#FAFAFA")}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                    >
-                      <td className="px-4 py-3 font-medium text-sm" style={{ color: "#1C1C2E" }}>{r.region_label}</td>
-                      <td className="px-4 py-3 text-sm" style={{ color: "#6B7280" }}>{r.total.toLocaleString("fr-FR")}</td>
-                      <td className="px-4 py-3">
-                        <ProgressBar value={r.taux_pct} color={r.taux_pct > 30 ? "#F15A24" : "#004B8D"} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
-          </section>
+          <div>
+            <SectionTitle>Churn par région</SectionTitle>
+            <DataTable
+              rowKey={(r) => r.region}
+              rows={churnByRegion}
+              columns={[
+                { key: "region_label", header: "Région",
+                  render: (r) => <span style={{ fontWeight: 500, color: "#0F1923" }}>{r.region_label}</span> },
+                { key: "total", header: "Clients",
+                  render: (r) => <span style={{ color: "#4A5568" }}>{r.total.toLocaleString("fr-FR")}</span>,
+                  align: "right" },
+                { key: "taux_pct", header: "Taux",
+                  render: (r) => <ProgressBar value={r.taux_pct} color={r.taux_pct > 30 ? ORANGE : BLUE} /> },
+              ]}
+            />
+          </div>
         )}
 
-        {/* Fraude par type */}
         {fraudeByType.length > 0 && (
-          <section>
-            <SectionLabel>Fraude par type de transaction</SectionLabel>
-            <Card>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: "1px solid #F3F4F6" }}>
-                    {["Type", "Total", "Taux fraude"].map((h) => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" style={{ color: "#9CA3AF" }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {fraudeByType.map((r, i) => (
-                    <tr
-                      key={r.type_transaction}
-                      style={{ borderBottom: i < fraudeByType.length - 1 ? "1px solid #F9FAFB" : "none" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#FAFAFA")}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                    >
-                      <td className="px-4 py-3 font-medium text-xs" style={{ color: "#1C1C2E" }}>{r.type_label}</td>
-                      <td className="px-4 py-3 text-sm" style={{ color: "#6B7280" }}>{r.total.toLocaleString("fr-FR")}</td>
-                      <td className="px-4 py-3">
-                        <ProgressBar value={r.taux_pct} color="#F15A24" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
-          </section>
+          <div>
+            <SectionTitle>Fraude par type de transaction</SectionTitle>
+            <DataTable
+              rowKey={(r) => r.type_transaction}
+              rows={fraudeByType}
+              columns={[
+                { key: "type_label", header: "Type",
+                  render: (r) => <span style={{ fontWeight: 500, color: "#0F1923", fontSize: 12 }}>{r.type_label}</span> },
+                { key: "frauduleuses", header: "Fraudes",
+                  render: (r) => <span style={{ color: r.frauduleuses > 0 ? "#DC2626" : "#8A97A8", fontWeight: 600 }}>{r.frauduleuses.toLocaleString("fr-FR")}</span>,
+                  align: "right" },
+                { key: "taux_pct", header: "Taux",
+                  render: (r) => <ProgressBar value={r.taux_pct} color={ORANGE} /> },
+              ]}
+            />
+          </div>
         )}
       </div>
+
+      {/* Derniers runs */}
+      {recentRuns.length > 0 && (
+        <div>
+          <SectionTitle>Derniers runs ML</SectionTitle>
+          <DataTable
+            rowKey={(r) => r.id}
+            rows={recentRuns}
+            columns={[
+              { key: "id", header: "#",
+                render: (r) => <span style={{ fontFamily: "monospace", color: "#8A97A8", fontSize: 12 }}>#{r.id}</span> },
+              { key: "cas_usage", header: "Modèle",
+                render: (r) => {
+                  const s = CAS_STYLE[r.cas_usage] ?? { bg: "#F1F5F9", color: "#64748B" };
+                  return (
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: 5,
+                      padding: "2px 9px", borderRadius: 20,
+                      fontSize: 11, fontWeight: 600,
+                      background: s.bg, color: s.color,
+                    }}>
+                      <Clock size={10} /> {r.cas_usage}
+                    </span>
+                  );
+                },
+              },
+              { key: "modele_version", header: "Version",
+                render: (r) => <span style={{ fontFamily: "monospace", fontSize: 12, color: "#4A5568" }}>{r.modele_version}</span> },
+              { key: "nb_predictions", header: "Prédictions",
+                render: (r) => <span style={{ color: BLUE, fontWeight: 600 }}>{r.nb_predictions.toLocaleString("fr-FR")}</span>,
+                align: "right" },
+              { key: "run_at", header: "Date",
+                render: (r) => <span style={{ color: "#8A97A8", fontSize: 12 }}>
+                  {new Date(r.run_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
+                </span> },
+            ]}
+          />
+        </div>
+      )}
     </div>
   );
 }

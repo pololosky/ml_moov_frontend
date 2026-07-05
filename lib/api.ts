@@ -22,65 +22,117 @@ export const getChurnByRegion = () =>
 export const getFraudeByType = () =>
   apiFetch<FraudeByType[]>("/api/dashboard/fraude-by-type");
 
+export const getRecentRuns = (limit = 10) =>
+  apiFetch<ModelRun[]>(`/api/dashboard/recent-runs?limit=${limit}`);
+
+export const getImportHistory = (limit = 20) =>
+  apiFetch<ImportLog[]>(`/api/dashboard/import-history?limit=${limit}`);
+
 // ─── Churn ────────────────────────────────────────────────────────────────────
 export const getChurnStats = () =>
   apiFetch<ChurnStats>("/api/churn/stats");
 
-export const getChurnByRegionDetail = () =>
-  apiFetch<ChurnByRegion[]>("/api/churn/by-region");
+export const getChurnPendingCount = () =>
+  apiFetch<{ pending: number }>("/api/churn/pending-count");
 
 export const getChurnPredictions = (
-  page = 1,
-  size = 50,
-  churn_flag?: number
+  page = 1, size = 50, churn_flag?: number
 ) => {
-  const params = new URLSearchParams({ page: String(page), size: String(size) });
-  if (churn_flag !== undefined) params.set("churn_flag", String(churn_flag));
-  return apiFetch<PaginatedResult<ChurnRow>>(`/api/churn/predictions?${params}`);
+  const p = new URLSearchParams({ page: String(page), size: String(size) });
+  if (churn_flag !== undefined) p.set("churn_flag", String(churn_flag));
+  return apiFetch<PaginatedResult<ChurnPrediction>>(`/api/churn/predictions?${p}`);
 };
 
-// 
-export const runChurnPredictions = () =>
-  apiFetch<{ message: string; count: number }>("/api/churn/run", { method: "POST" });
+export const getChurnHistory = (client_id: string) =>
+  apiFetch<ChurnPrediction[]>(`/api/churn/history/${client_id}`);
+
+export const runChurnPredictions = (
+  horizon_jours = 30, only_pending = false
+) =>
+  apiFetch<RunResult>(`/api/churn/run?horizon_jours=${horizon_jours}&only_pending=${only_pending}`, {
+    method: "POST",
+  });
 
 // ─── Segmentation ─────────────────────────────────────────────────────────────
 export const getSegmentationStats = () =>
   apiFetch<SegmentationStats>("/api/segmentation/stats");
 
+export const getSegmentDefinitions = () =>
+  apiFetch<SegmentDefinition[]>("/api/segmentation/segments");
+
+export const upsertSegmentDefinition = (
+  segment_id: number,
+  body: { label: string; description?: string; couleur_hex?: string }
+) =>
+  apiFetch<{ message: string }>(`/api/segmentation/segments/${segment_id}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+
 export const getSegmentationPredictions = (
-  page = 1,
-  size = 50,
-  region?: number,
-  type_client?: number
+  page = 1, size = 50,
+  segment_id?: number, region?: number
 ) => {
-  const params = new URLSearchParams({ page: String(page), size: String(size) });
-  if (region !== undefined) params.set("region", String(region));
-  if (type_client !== undefined) params.set("type_client", String(type_client));
-  return apiFetch<PaginatedResult<SegmentRow>>(`/api/segmentation/predictions?${params}`);
+  const p = new URLSearchParams({ page: String(page), size: String(size) });
+  if (segment_id !== undefined) p.set("segment_id", String(segment_id));
+  if (region !== undefined) p.set("region", String(region));
+  return apiFetch<PaginatedResult<SegmentPrediction>>(`/api/segmentation/predictions?${p}`);
 };
 
-export const runSegmentation = () =>
-  apiFetch<{ message: string; count: number; segments: SegmentResult[] }>("/api/segmentation/run", { method: "POST" });
+export const getSegmentHistory = (client_id: string) =>
+  apiFetch<SegmentPrediction[]>(`/api/segmentation/history/${client_id}`);
+
+export const runSegmentation = (only_pending = false) =>
+  apiFetch<RunResult>(`/api/segmentation/run?only_pending=${only_pending}`, {
+    method: "POST",
+  });
 
 // ─── Fraude ───────────────────────────────────────────────────────────────────
 export const getFraudeStats = () =>
   apiFetch<FraudeStats>("/api/fraude/stats");
 
+export const getFraudePendingCount = () =>
+  apiFetch<{ pending: number }>("/api/fraude/pending-count");
+
 export const getFraudePredictions = (
-  page = 1,
-  size = 50,
-  fraude_flag?: number
+  page = 1, size = 50,
+  fraude_flag?: number, statut?: string
 ) => {
-  const params = new URLSearchParams({ page: String(page), size: String(size) });
-  if (fraude_flag !== undefined) params.set("fraude_flag", String(fraude_flag));
-  return apiFetch<PaginatedResult<FraudeRow>>(`/api/fraude/predictions?${params}`);
+  const p = new URLSearchParams({ page: String(page), size: String(size) });
+  if (fraude_flag !== undefined) p.set("fraude_flag", String(fraude_flag));
+  if (statut) p.set("statut", statut);
+  return apiFetch<PaginatedResult<FraudePrediction>>(`/api/fraude/predictions?${p}`);
 };
 
+export const getFraudeHistory = (transaction_id: number) =>
+  apiFetch<FraudePrediction[]>(`/api/fraude/history/${transaction_id}`);
+
+export const updateFraudeStatut = (pred_id: number, statut: string) =>
+  apiFetch<{ message: string }>(`/api/fraude/${pred_id}/statut`, {
+    method: "PUT",
+    body: JSON.stringify({ statut }),
+  });
+
 export const runFraudeDetection = () =>
-  apiFetch<{ message: string; count: number }>("/api/fraude/run", { method: "POST" });
+  apiFetch<RunResult>("/api/fraude/run", { method: "POST" });
 
 // ─── Import Excel ─────────────────────────────────────────────────────────────
-export async function importExcel(table_name: string, file: File) {
+/** Upload via /api/import/upload — détection automatique depuis le nom du fichier */
+export async function importExcelUpload(file: File): Promise<ImportResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${BASE_URL}/api/import/upload`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error(`Import — ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+/** Upload avec table forcée via /api/import/{table_name} */
+export async function importExcelByTable(
+  table_name: string, file: File
+): Promise<ImportResult> {
   const formData = new FormData();
   formData.append("file", file);
   const res = await fetch(`${BASE_URL}/api/import/${table_name}`, {
@@ -88,22 +140,26 @@ export async function importExcel(table_name: string, file: File) {
     body: formData,
   });
   if (!res.ok) throw new Error(`Import ${table_name} — ${res.status}: ${await res.text()}`);
-  return res.json() as Promise<ImportResult>;
+  return res.json();
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
 export interface DashboardOverview {
   nb_clients: number;
   nb_clients_actifs: number;
   nb_agents: number;
   nb_transactions: number;
-  nb_churn_total: number;
+  nb_churn_analyses: number;
   nb_churned: number;
-  nb_fraude_total: number;
+  nb_fraude_analyses: number;
   nb_frauduleuses: number;
-  nb_segmentation: number;
+  nb_segmentes: number;
   taux_churn_pct: number;
   taux_fraude_pct: number;
+  churn_pending: number;
+  seg_pending: number;
+  fraude_pending: number;
 }
 
 export interface ChurnByRegion {
@@ -111,6 +167,7 @@ export interface ChurnByRegion {
   region_label: string;
   total: number;
   churned: number;
+  score_moyen: number;
   taux_pct: number;
 }
 
@@ -119,84 +176,143 @@ export interface FraudeByType {
   type_label: string;
   total: number;
   frauduleuses: number;
+  score_moyen: number;
   taux_pct: number;
+}
+
+export interface ModelRun {
+  id: number;
+  cas_usage: "churn" | "fraude" | "segmentation";
+  modele_version: string;
+  nb_predictions: number;
+  run_at: string;
+  run_by: string | null;
+  metriques: Record<string, number> | null;
+}
+
+export interface ImportLog {
+  id: number;
+  fichier_source: string;
+  table_cible: string;
+  nb_lignes_in: number;
+  nb_lignes_ok: number;
+  nb_lignes_err: number;
+  statut: string;
+  imported_at: string;
+  imported_by: string | null;
 }
 
 export interface ChurnStats {
   total: number;
   churned: number;
   not_churned: number;
+  score_moyen: number;
+  taux_churn_pct: number;
   arpu_moyen: number;
   anciennete_moy: number;
-  taux_churn_pct: number;
+  pending_retraining: number;
 }
 
-export interface ChurnRow {
+export interface ChurnPrediction {
+  id: number;
   client_id: string;
+  score_churn: number;
   churn_flag: number;
-  anciennete_mois: number;
-  region: number;
-  region_label: string;
-  type_client: number;
-  type_client_label: string;
-  arpu_moyen_fcfa: number;
-  nb_reclamations: number;
-  nb_demandes_resiliation: number;
-  satisfaction_moy: number;
-  montant_recharge_moy: number;
+  horizon_jours: number;
+  predicted_at: string;
+  is_latest: boolean;
+  model_run_id: number | null;
+  region?: number;
+  region_label?: string;
+  type_client?: number;
+  type_client_label?: string;
+  anciennete_mois?: number;
+  arpu_moyen_fcfa?: number;
+  nb_reclamations?: number;
+  nb_demandes_resiliation?: number;
+  satisfaction_moy?: number;
 }
 
 export interface SegmentationStats {
   total: number;
-  by_region: { region: number; region_label: string; nb: number }[];
-  by_type: { type_client: number; type_label: string; nb: number }[];
+  segments: {
+    segment_id: number;
+    label: string;
+    couleur_hex: string;
+    nb_clients: number;
+  }[];
+  pending_retraining: number;
 }
 
-export interface SegmentRow {
-  client_id: string;
-  anciennete_mois: number;
-  region: number;
-  region_label: string;
-  type_client: number;
-  type_client_label: string;
-  arpu_moyen_fcfa: number;
-  smartphone_flag: number;
-  voix_out_moy: number;
-  data_moy: number;
-  solde_moy: number;
-  tx_flooz_moy: number;
+export interface SegmentDefinition {
+  segment_id: number;
+  label: string;
+  description: string | null;
+  couleur_hex: string | null;
+  model_run_id: number | null;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface SegmentResult {
+export interface SegmentPrediction {
+  id: number;
   client_id: string;
   segment_id: number;
   segment_label: string;
+  couleur_hex: string;
+  predicted_at: string;
+  is_latest: boolean;
+  model_run_id: number | null;
+  region?: number;
+  region_label?: string;
+  type_client?: number;
+  type_client_label?: string;
+  anciennete_mois?: number;
+  arpu_moyen_fcfa?: number;
+  smartphone_flag?: number;
+  voix_out_moy?: number;
+  data_moy?: number;
+  solde_moy?: number;
+  tx_flooz_moy?: number;
 }
 
 export interface FraudeStats {
   total: number;
   frauduleuses: number;
   normales: number;
-  montant_moyen: number;
-  ratio_plafond_moyen: number;
+  score_moyen: number;
   taux_fraude_pct: number;
+  alertes_en_attente: number;
+  pending_predictions: number;
 }
 
-export interface FraudeRow {
+export interface FraudePrediction {
+  id: number;
   transaction_id: number;
-  agent_id: string;
+  score_fraude: number;
   fraude_flag: number;
-  type_transaction: number;
-  type_label: string;
-  montant_fcfa: number;
-  region: number;
-  region_label: string;
-  nb_tx_24h: number;
-  ecart_zone_habituelle: number;
-  ratio_montant_plafond: number;
-  agent_recent: number;
-  depassement_plafond: number;
-  variation_solde: number;
+  statut: "Nouvelle" | "Traitee" | "Ignoree";
+  predicted_at: string;
+  is_latest: boolean;
+  model_run_id: number | null;
+  agent_id?: string;
+  type_transaction?: number;
+  type_label?: string;
+  montant_fcfa?: number;
+  region?: number;
+  region_label?: string;
+  nb_tx_24h?: number;
+  ecart_zone_habituelle?: number;
+  ratio_montant_plafond?: number;
+  agent_recent?: number;
+  depassement_plafond?: number;
+  variation_solde?: number;
+}
+
+export interface RunResult {
+  message: string;
+  count: number;
+  run_id?: number;
 }
 
 export interface PaginatedResult<T> {
@@ -208,7 +324,10 @@ export interface PaginatedResult<T> {
 
 export interface ImportResult {
   message: string;
+  table: string;
   inserted: number;
   errors: number;
-  error_details: { ligne: number; erreur: string }[];
+  total_in_file: number;
+  log_id: number;
+  error_details: string[];
 }

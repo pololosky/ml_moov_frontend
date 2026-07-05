@@ -1,26 +1,44 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { TrendingDown, Users, Star, Clock, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import StatCard from "@/components/ui/StatCard";
-import Badge from "@/components/ui/Badge";
-import RunButton from "@/components/ui/RunButton";
-import PageHeader from "@/components/ui/PageHeader";
+import { TrendingDown, Users, Banknote, Calendar, Loader2 } from "lucide-react";
+import StatCard    from "@/components/ui/StatCard";
+import Badge       from "@/components/ui/Badge";
+import RunButton   from "@/components/ui/RunButton";
+import PageHeader  from "@/components/ui/PageHeader";
+import DataTable   from "@/components/ui/DataTable";
+import Pagination  from "@/components/ui/Pagination";
 import {
   getChurnStats, getChurnPredictions, runChurnPredictions,
-  type ChurnStats, type ChurnRow, type PaginatedResult,
+  type ChurnStats, type ChurnPrediction, type PaginatedResult,
 } from "@/lib/api";
 
+const BLUE   = "#0693E3";
+const ORANGE = "#E96805";
+
 const FILTERS = [
-  { label: "Tous", value: undefined },
+  { label: "Tous",   value: undefined },
   { label: "Churné", value: 1 },
-  { label: "Actif", value: 0 },
+  { label: "Actif",  value: 0 },
 ];
 
+function ScoreBar({ score }: { score: number }) {
+  const pct   = Math.round(score * 100);
+  const color = score >= 0.7 ? ORANGE : score >= 0.4 ? "#D97706" : "#16A34A";
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ flex: 1, height: 5, background: "#F1F5F9", borderRadius: 3, maxWidth: 64 }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 3 }} />
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 600, color, minWidth: 38 }}>{score.toFixed(3)}</span>
+    </div>
+  );
+}
+
 export default function ChurnDashboard() {
-  const [stats, setStats] = useState<ChurnStats | null>(null);
-  const [result, setResult] = useState<PaginatedResult<ChurnRow> | null>(null);
-  const [page, setPage] = useState(1);
+  const [stats,  setStats]  = useState<ChurnStats | null>(null);
+  const [result, setResult] = useState<PaginatedResult<ChurnPrediction> | null>(null);
+  const [page,   setPage]   = useState(1);
   const [filter, setFilter] = useState<number | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
@@ -45,10 +63,10 @@ export default function ChurnDashboard() {
   const totalPages = result ? Math.ceil(result.total / 50) : 1;
 
   return (
-    <div className="p-8 space-y-6 max-w-7xl">
+    <div style={{ padding: "32px 36px", maxWidth: 1200 }}>
       <PageHeader
         title="Prédiction du Churn"
-        description="Identifiez les clients susceptibles de résilier"
+        description="Identifiez les clients susceptibles de résilier leur abonnement"
         icon={TrendingDown}
         accent="orange"
         action={
@@ -59,130 +77,109 @@ export default function ChurnDashboard() {
         }
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
         <StatCard title="Clients analysés" value={stats?.total ?? 0} icon={Users} accent="blue" />
         <StatCard
-          title="Clients churné"
+          title="Clients à risque"
           value={stats?.churned ?? 0}
-          subtitle={`${stats?.taux_churn_pct ?? 0}% de taux`}
+          subtitle={`Taux : ${stats?.taux_churn_pct ?? 0}%`}
           icon={TrendingDown}
           accent="orange"
         />
         <StatCard
           title="ARPU moyen"
-          value={stats ? `${Math.round(Number(stats.arpu_moyen)).toLocaleString("fr-FR")} FCFA` : "—"}
-          icon={Star}
+          value={stats?.arpu_moyen != null
+            ? `${Math.round(Number(stats.arpu_moyen)).toLocaleString("fr-FR")} F`
+            : "—"}
+          icon={Banknote}
           accent="blue"
         />
         <StatCard
           title="Ancienneté moy."
-          value={stats ? `${stats.anciennete_moy} mois` : "—"}
-          icon={Clock}
+          value={stats?.anciennete_moy != null ? `${stats.anciennete_moy} mois` : "—"}
+          icon={Calendar}
           accent="green"
         />
       </div>
 
       {/* Filtres */}
-      <div className="flex items-center gap-2">
-        {FILTERS.map(({ label, value }) => (
-          <button
-            key={label}
-            onClick={() => { setFilter(value); setPage(1); }}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all border ${
-              filter === value
-                ? "text-white border-transparent shadow-sm"
-                : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
-            }`}
-            style={filter === value ? { backgroundColor: "#004B8D", borderColor: "#004B8D" } : undefined}
-          >
-            {label}
-          </button>
-        ))}
+      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        {FILTERS.map(({ label, value }) => {
+          const active = filter === value;
+          return (
+            <button
+              key={label}
+              onClick={() => { setFilter(value); setPage(1); }}
+              style={{
+                padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                border: active ? "none" : "1px solid #E8ECF0",
+                background: active ? BLUE : "#FFF",
+                color: active ? "#FFF" : "#4A5568",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
+        {stats?.pending_retraining ? (
+          <span style={{
+            marginLeft: "auto", display: "flex", alignItems: "center", gap: 5,
+            fontSize: 11, color: "#C85A04",
+            background: "#FEF3E8", border: "1px solid #FDDCC0",
+            padding: "4px 10px", borderRadius: 20,
+          }}>
+            {stats.pending_retraining} clients en attente de recalcul
+          </span>
+        ) : null}
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="flex justify-center items-center py-16">
-            <Loader2 size={24} className="animate-spin text-[#004B8D]" />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-50">
-                  {["Client ID", "Statut", "Région", "Type client", "ARPU (FCFA)", "Réclamations", "Dem. résiliation", "Satisfaction"].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {result?.data.map((row) => (
-                  <tr key={row.client_id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-gray-400">{row.client_id}</td>
-                    <td className="px-4 py-3">
-                      {row.churn_flag === 1 ? (
-                        <Badge label="Churné" variant="orange" />
-                      ) : (
-                        <Badge label="Actif" variant="green" />
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">{row.region_label}</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">{row.type_client_label}</td>
-                    <td className="px-4 py-3 text-gray-700 font-medium">
-                      {Number(row.arpu_moyen_fcfa).toLocaleString("fr-FR")}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{row.nb_reclamations}</td>
-                    <td className="px-4 py-3">
-                      <span className={row.nb_demandes_resiliation > 0 ? "font-semibold text-[#F15A24]" : "text-gray-600"}>
-                        {row.nb_demandes_resiliation}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {row.satisfaction_moy ? Number(row.satisfaction_moy).toFixed(2) : "—"}
-                    </td>
-                  </tr>
-                ))}
-                {!result?.data.length && (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-gray-400 text-sm">
-                      Aucune donnée. Importez les données puis lancez la prédiction.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Tableau */}
+      <DataTable
+        loading={loading}
+        rowKey={(r) => r.id}
+        rows={result?.data ?? []}
+        emptyMessage="Aucune prédiction. Importez les données puis lancez la prédiction."
+        columns={[
+          { key: "client_id", header: "Client ID",
+            render: (r) => <span style={{ fontFamily: "monospace", fontSize: 11, color: "#8A97A8" }}>{r.client_id}</span> },
+          { key: "churn_flag", header: "Statut",
+            render: (r) => r.churn_flag === 1
+              ? <Badge label="Risque churn" variant="orange" />
+              : <Badge label="Actif" variant="green" /> },
+          { key: "score_churn", header: "Score",
+            render: (r) => <ScoreBar score={Number(r.score_churn)} /> },
+          { key: "region_label", header: "Région",
+            render: (r) => <span style={{ color: "#4A5568", fontSize: 12 }}>{r.region_label ?? "—"}</span> },
+          { key: "type_client_label", header: "Type client",
+            render: (r) => <span style={{ color: "#4A5568", fontSize: 12 }}>{r.type_client_label ?? "—"}</span> },
+          { key: "arpu_moyen_fcfa", header: "ARPU (FCFA)", align: "right",
+            render: (r) => <span style={{ fontWeight: 600, color: BLUE }}>
+              {r.arpu_moyen_fcfa != null ? Number(r.arpu_moyen_fcfa).toLocaleString("fr-FR") : "—"}
+            </span> },
+          { key: "nb_reclamations", header: "Réclamations", align: "right",
+            render: (r) => <span style={{ color: "#4A5568" }}>{r.nb_reclamations ?? 0}</span> },
+          { key: "nb_demandes_resiliation", header: "Dem. rés.", align: "right",
+            render: (r) => (
+              <span style={{ fontWeight: r.nb_demandes_resiliation ? 700 : 400, color: r.nb_demandes_resiliation ? ORANGE : "#8A97A8" }}>
+                {r.nb_demandes_resiliation ?? 0}
+              </span>
+            ) },
+          { key: "satisfaction_moy", header: "Satisfaction", align: "right",
+            render: (r) => <span style={{ color: "#4A5568", fontSize: 12 }}>
+              {r.satisfaction_moy != null ? Number(r.satisfaction_moy).toFixed(2) : "—"}
+            </span> },
+        ]}
+      />
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-400">
-            {result?.total.toLocaleString("fr-FR")} résultats · Page {page}/{totalPages}
-          </p>
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-all"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-all"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={page} totalPages={totalPages}
+        total={result?.total ?? 0}
+        onPrev={() => setPage((p) => Math.max(1, p - 1))}
+        onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+      />
     </div>
   );
 }

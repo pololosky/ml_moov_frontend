@@ -3,87 +3,93 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  TrendingDown,
-  PieChart,
-  ShieldAlert,
-  Upload,
+  LayoutDashboard, TrendingDown, PieChart, ShieldAlert, Upload,
 } from "lucide-react";
 
-const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/churn", label: "Churn", icon: TrendingDown },
+const NAV = [
+  { href: "/",             label: "Dashboard",    icon: LayoutDashboard },
+  { href: "/churn",        label: "Churn",        icon: TrendingDown },
   { href: "/segmentation", label: "Segmentation", icon: PieChart },
-  { href: "/fraude", label: "Fraude", icon: ShieldAlert },
-  { href: "/import", label: "Import Excel", icon: Upload },
+  { href: "/fraude",       label: "Fraude",       icon: ShieldAlert },
+  { href: "/import",       label: "Import",       icon: Upload },
 ];
+
+const BLUE   = "#0693E3";
+const ORANGE = "#E96805";
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed top-0 left-0 h-full w-60 flex flex-col z-40" style={{ backgroundColor: "#ffffff", borderRight: "1px solid #EAECF0", boxShadow: "1px 0 4px rgba(0,0,0,0.04)" }}>
-      {/* Logo Moov */}
-      <div className="px-5 py-5" style={{ borderBottom: "1px solid #EAECF0" }}>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-            style={{ backgroundColor: "#004B8D" }}
-          >
-            M
+    <aside style={{
+      position: "fixed", top: 0, left: 0,
+      width: 240, height: "100vh",
+      background: "#FFFFFF",
+      borderRight: "1px solid #E8ECF0",
+      display: "flex", flexDirection: "column",
+      zIndex: 50,
+    }}>
+      {/* Logo */}
+      <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #E8ECF0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Icône diamant Moov */}
+          <div style={{
+            width: 34, height: 34,
+            borderRadius: 8,
+            background: `linear-gradient(135deg, ${BLUE} 0%, ${ORANGE} 100%)`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="5" y="1" width="6" height="6" rx="1" transform="rotate(45 8 8)" fill="white" opacity="0.9"/>
+            </svg>
           </div>
           <div>
-            <p className="font-semibold text-sm leading-tight" style={{ color: "#1C1C2E" }}>Moov Africa</p>
-            <p className="text-xs" style={{ color: "#9CA3AF" }}>ML Analytics</p>
+            <div style={{ fontWeight: 700, fontSize: 13, color: "#0F1923", lineHeight: 1.2 }}>
+              Moov Africa
+            </div>
+            <div style={{ fontSize: 11, color: "#8A97A8", marginTop: 1 }}>
+              ML Analytics · Togo
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        <p className="text-[10px] font-semibold uppercase tracking-widest px-3 mb-2" style={{ color: "#9CA3AF" }}>
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
+        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", color: "#8A97A8", textTransform: "uppercase", padding: "4px 10px 8px" }}>
           Navigation
-        </p>
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href;
+        </div>
+        {NAV.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href;
           return (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all"
-              style={
-                isActive
-                  ? { backgroundColor: "#004B8D", color: "#ffffff" }
-                  : { color: "#6B7280" }
-              }
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = "#F4F6FA";
-                  e.currentTarget.style.color = "#1C1C2E";
-                }
+            <Link key={href} href={href} style={{ textDecoration: "none" }}>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "9px 12px", borderRadius: 8, marginBottom: 2,
+                background: active ? BLUE : "transparent",
+                color: active ? "#FFFFFF" : "#4A5568",
+                fontWeight: active ? 600 : 500,
+                fontSize: 13,
+                transition: "background 0.15s, color 0.15s",
+                cursor: "pointer",
               }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "#6B7280";
-                }
-              }}
-            >
-              <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
-              {label}
+              onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "#F0F8FF"; }}
+              onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+              >
+                <Icon size={15} strokeWidth={active ? 2.5 : 2} />
+                {label}
+              </div>
             </Link>
           );
         })}
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-4" style={{ borderTop: "1px solid #EAECF0" }}>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: "#F15A24" }}
-          />
-          <p className="text-xs" style={{ color: "#9CA3AF" }}>Togo — v1.0.0</p>
+      <div style={{ padding: "12px 20px", borderTop: "1px solid #E8ECF0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#16A34A" }} />
+          <span style={{ fontSize: 11, color: "#8A97A8" }}>API connectée · v1.0</span>
         </div>
       </div>
     </aside>
