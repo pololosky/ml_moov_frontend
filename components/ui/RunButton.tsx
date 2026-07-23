@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Play, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
-const BLUE = "#0693E3";
+const BLUE = "#0054A6";
 
 export default function RunButton({ label, onRun }: {
   label: string;
@@ -18,6 +18,8 @@ export default function RunButton({ label, onRun }: {
     try {
       const r = await onRun();
       setResult(r.message);
+      // Effacer le message de succès après 4s
+      setTimeout(() => setResult(null), 4000);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur");
     } finally {
@@ -32,13 +34,12 @@ export default function RunButton({ label, onRun }: {
         disabled={loading}
         style={{
           display: "inline-flex", alignItems: "center", gap: 7,
-          padding: "8px 16px", borderRadius: 8,
-          background: loading ? "#7CC8F4" : BLUE,
+          padding: "8px 18px", borderRadius: 8,
+          background: loading ? "#3A7BC8" : BLUE,
           color: "#fff", border: "none",
           fontSize: 13, fontWeight: 600,
           cursor: loading ? "not-allowed" : "pointer",
-          boxShadow: "0 1px 3px rgba(6,147,227,0.3)",
-          transition: "background 0.15s",
+          boxShadow: loading ? "none" : "0 2px 8px rgba(0,84,166,0.3)",
           letterSpacing: "0.01em",
         }}
       >
@@ -49,13 +50,19 @@ export default function RunButton({ label, onRun }: {
       </button>
 
       {result && (
-        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#16A34A" }}>
-          <CheckCircle size={13} /> {result}
+        <span
+          className="anim-fade"
+          style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#16A34A" }}
+        >
+          <CheckCircle size={14} /> {result}
         </span>
       )}
       {error && (
-        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#DC2626" }}>
-          <AlertCircle size={13} /> {error}
+        <span
+          className="anim-fade"
+          style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#DC2626" }}
+        >
+          <AlertCircle size={14} /> {error}
         </span>
       )}
     </div>

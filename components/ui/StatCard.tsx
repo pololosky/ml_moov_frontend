@@ -3,7 +3,7 @@ import { LucideIcon } from "lucide-react";
 type Accent = "blue" | "orange" | "green" | "red" | "gray";
 
 const ACCENTS: Record<Accent, { bg: string; icon: string; value: string; border: string }> = {
-  blue:   { bg: "#E8F5FD", icon: "#0693E3", value: "#0693E3", border: "#D0EAFB" },
+  blue:   { bg: "#E6EEF7", icon: "#0054A6", value: "#0054A6", border: "#C5D9EF" },
   orange: { bg: "#FEF3E8", icon: "#E96805", value: "#E96805", border: "#FDDCC0" },
   green:  { bg: "#F0FDF4", icon: "#16A34A", value: "#16A34A", border: "#BBF7D0" },
   red:    { bg: "#FEF2F2", icon: "#DC2626", value: "#DC2626", border: "#FECACA" },
@@ -21,16 +21,19 @@ interface StatCardProps {
 export default function StatCard({ title, value, subtitle, icon: Icon, accent = "blue" }: StatCardProps) {
   const a = ACCENTS[accent];
   return (
-    <div style={{
-      background: "#FFFFFF",
-      border: "1px solid #E8ECF0",
-      borderRadius: 12,
-      padding: "16px 18px",
-      display: "flex",
-      alignItems: "flex-start",
-      gap: 14,
-      boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-    }}>
+    <div
+      className="card-hover anim-fade-up"
+      style={{
+        background: "#FFFFFF",
+        border: "1px solid #E8ECF0",
+        borderRadius: 12,
+        padding: "16px 18px",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 14,
+        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+      }}
+    >
       <div style={{
         width: 40, height: 40,
         borderRadius: 10,

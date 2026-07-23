@@ -14,7 +14,7 @@ import {
   type DashboardOverview, type ChurnByRegion, type FraudeByType, type ModelRun,
 } from "@/lib/api";
 
-const BLUE   = "#0693E3";
+const BLUE   = "#0054A6";
 const ORANGE = "#E96805";
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -104,9 +104,12 @@ export default function DashboardOverview() {
             background: "#fff", border: "1px solid #E8ECF0",
             color: "#4A5568", fontSize: 12, fontWeight: 500,
             cursor: "pointer",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#0054A6"; e.currentTarget.style.color = "#0054A6"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E8ECF0"; e.currentTarget.style.color = "#4A5568"; }}
         >
-          <RefreshCw size={13} /> Actualiser
+          <RefreshCw size={13} style={{ transition: "transform 0.3s" }} /> Actualiser
         </button>
       </div>
 
@@ -123,10 +126,16 @@ export default function DashboardOverview() {
       <div style={{ marginBottom: 32 }}>
         <SectionTitle>Données sources</SectionTitle>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-          <StatCard title="Clients total"   value={overview?.nb_clients ?? 0}        icon={Users}     accent="blue" />
-          <StatCard title="Clients actifs"  value={overview?.nb_clients_actifs ?? 0}  icon={UserCheck} accent="green" />
-          <StatCard title="Agents"          value={overview?.nb_agents ?? 0}           icon={Building2} accent="blue" />
-          <StatCard title="Transactions"    value={overview?.nb_transactions ?? 0}     icon={CreditCard} accent="orange" />
+          {[
+            { title: "Clients total",  value: overview?.nb_clients ?? 0,        icon: Users,     accent: "blue"   as const, delay: "0.05s" },
+            { title: "Clients actifs", value: overview?.nb_clients_actifs ?? 0,  icon: UserCheck, accent: "green"  as const, delay: "0.10s" },
+            { title: "Agents",         value: overview?.nb_agents ?? 0,           icon: Building2, accent: "blue"   as const, delay: "0.15s" },
+            { title: "Transactions",   value: overview?.nb_transactions ?? 0,     icon: CreditCard,accent: "orange" as const, delay: "0.20s" },
+          ].map(({ delay, ...props }) => (
+            <div key={props.title} style={{ animation: `fadeInUp 0.35s ease both`, animationDelay: delay }}>
+              <StatCard {...props} />
+            </div>
+          ))}
         </div>
       </div>
 

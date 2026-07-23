@@ -5,12 +5,12 @@ import { Upload, FileSpreadsheet, CheckCircle, AlertTriangle, Info, Database } f
 import PageHeader from "@/components/ui/PageHeader";
 import { importExcelUpload, importExcelByTable, type ImportResult } from "@/lib/api";
 
-const BLUE   = "#0693E3";
+const BLUE   = "#0054A6";
 const ORANGE = "#E96805";
 
 const TABLES = [
-  { value: "dim_forfait",                   label: "Dim Forfait",      desc: "15 forfaits",           pattern: "dim_forfait" },
-  { value: "dim_client",                    label: "Dim Client",       desc: "4 000 clients",          pattern: "dim_client" },
+  { value: "dim_forfait",                   label: "Dim Forfait",      desc: "pour les forfaits",           pattern: "dim_forfait" },
+  { value: "dim_client",                    label: "Dim Client",       desc: "pour les clients",          pattern: "dim_client" },
   { value: "dim_agent",                     label: "Dim Agent",        desc: "300 agents",             pattern: "dim_agent" },
   { value: "fact_conso_mensuelle",          label: "Conso Mensuelle",  desc: "48 000 lignes",          pattern: "conso_mensuel" },
   { value: "fact_evenement_service_client", label: "Événements SAV",   desc: "10 980 événements",      pattern: "evenement" },
@@ -65,7 +65,7 @@ export default function ImportExcel() {
   const currentTable = TABLES.find((t) => t.value === selectedTable);
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 800 }}>
+    <div className="anim-fade-up" style={{ padding: "32px 36px", maxWidth: 800 }}>
       <PageHeader
         title="Import Excel"
         description="Alimentez la base de données — les triggers PostgreSQL se déclenchent automatiquement"
@@ -215,16 +215,45 @@ export default function ImportExcel() {
               </div>
             )}
             {result.error_details.length > 0 && (
-              <details style={{ marginTop: 10 }}>
-                <summary style={{ fontSize: 11, color: "#8A97A8", cursor: "pointer" }}>
-                  Voir {result.error_details.length} erreurs
-                </summary>
-                <div style={{ marginTop: 6, maxHeight: 120, overflowY: "auto" }}>
+              <div style={{ marginTop: 12 }}>
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  marginBottom: 8, paddingBottom: 8,
+                  borderBottom: "1px solid #FCD34D",
+                }}>
+                  <AlertTriangle size={13} style={{ color: "#D97706", flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#92400E" }}>
+                    {result.error_details.length} erreur{result.error_details.length > 1 ? "s" : ""} d&apos;insertion
+                  </span>
+                </div>
+                <div style={{
+                  maxHeight: 320,
+                  overflowY: "auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                }}>
                   {result.error_details.map((e, i) => (
-                    <div key={i} style={{ fontSize: 11, color: "#DC2626", padding: "2px 0" }}>{e}</div>
+                    <div
+                      key={i}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: 7,
+                        background: "#FEF2F2",
+                        border: "1px solid #FECACA",
+                        fontSize: 12,
+                        color: "#991B1B",
+                        lineHeight: 1.5,
+                        fontFamily: "monospace",
+                        wordBreak: "break-word",
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {e}
+                    </div>
                   ))}
                 </div>
-              </details>
+              </div>
             )}
           </div>
         )}

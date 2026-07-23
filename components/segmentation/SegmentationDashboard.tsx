@@ -13,7 +13,7 @@ import {
   type SegmentationStats, type SegmentPrediction, type PaginatedResult,
 } from "@/lib/api";
 
-const BLUE   = "#0693E3";
+const BLUE   = "#0054A6";
 const ORANGE = "#E96805";
 
 const REGION_FILTERS = [
@@ -53,7 +53,7 @@ export default function SegmentationDashboard() {
   const segments   = stats?.segments ?? [];
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 1200 }}>
+    <div className="anim-fade-up" style={{ padding: "32px 36px", maxWidth: 1200 }}>
       <PageHeader
         title="Segmentation Client"
         description="Clustering K-Means des profils de consommation"
@@ -105,6 +105,7 @@ export default function SegmentationDashboard() {
               return (
                 <button
                   key={seg.segment_id}
+                  className="chip-hover"
                   onClick={() => { setSegFilter(active ? undefined : seg.segment_id); setPage(1); }}
                   style={{
                     display: "flex", alignItems: "center", gap: 7,

@@ -96,22 +96,15 @@ export const getFraudePendingCount = () =>
 
 export const getFraudePredictions = (
   page = 1, size = 50,
-  fraude_flag?: number, statut?: string
+  fraude_flag?: number
 ) => {
   const p = new URLSearchParams({ page: String(page), size: String(size) });
   if (fraude_flag !== undefined) p.set("fraude_flag", String(fraude_flag));
-  if (statut) p.set("statut", statut);
   return apiFetch<PaginatedResult<FraudePrediction>>(`/api/fraude/predictions?${p}`);
 };
 
 export const getFraudeHistory = (transaction_id: number) =>
   apiFetch<FraudePrediction[]>(`/api/fraude/history/${transaction_id}`);
-
-export const updateFraudeStatut = (pred_id: number, statut: string) =>
-  apiFetch<{ message: string }>(`/api/fraude/${pred_id}/statut`, {
-    method: "PUT",
-    body: JSON.stringify({ statut }),
-  });
 
 export const runFraudeDetection = () =>
   apiFetch<RunResult>("/api/fraude/run", { method: "POST" });
@@ -282,7 +275,6 @@ export interface FraudeStats {
   normales: number;
   score_moyen: number;
   taux_fraude_pct: number;
-  alertes_en_attente: number;
   pending_predictions: number;
 }
 
@@ -291,7 +283,6 @@ export interface FraudePrediction {
   transaction_id: number;
   score_fraude: number;
   fraude_flag: number;
-  statut: "Nouvelle" | "Traitee" | "Ignoree";
   predicted_at: string;
   is_latest: boolean;
   model_run_id: number | null;

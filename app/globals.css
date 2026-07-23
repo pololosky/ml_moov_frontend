@@ -9,10 +9,10 @@
   color-scheme: light;
 
   /* Palette Moov Africa Togo */
-  --moov-blue:         #0693E3;
-  --moov-blue-dark:    #0578C0;
-  --moov-blue-light:   #E8F5FD;
-  --moov-blue-muted:   #D0EAFB;
+  --moov-blue:         #0054A6;
+  --moov-blue-dark:    #003F80;
+  --moov-blue-light:   #E6EEF7;
+  --moov-blue-muted:   #C5D9EF;
 
   --moov-orange:       #E96805;
   --moov-orange-dark:  #C85A04;
@@ -54,3 +54,117 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── Animations globales ── */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+@keyframes pulseBar {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.7; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Classes utilitaires d'animation */
+.anim-fade-up   { animation: fadeInUp  0.35s ease both; }
+.anim-fade      { animation: fadeIn    0.25s ease both; }
+.anim-scale-in  { animation: scaleIn   0.3s  ease both; }
+.anim-slide-left{ animation: slideInLeft 0.3s ease both; }
+
+/* Délais en cascade pour les grilles de cartes */
+.anim-delay-1 { animation-delay: 0.05s; }
+.anim-delay-2 { animation-delay: 0.10s; }
+.anim-delay-3 { animation-delay: 0.15s; }
+.anim-delay-4 { animation-delay: 0.20s; }
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg, #E8ECF0 25%, #F4F6FA 50%, #E8ECF0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* Hover générique sur les lignes de tableau */
+.table-row-hover {
+  transition: background 0.12s ease;
+}
+.table-row-hover:hover {
+  background-color: #FAFBFC !important;
+}
+
+/* Transition universelle pour les boutons */
+button {
+  transition: opacity 0.15s ease, transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Barre de progression animée */
+.progress-bar-fill {
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Chips/badges avec transition hover */
+.chip-hover {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.chip-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Cartes avec effet hover */
+.card-hover {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-hover:hover {
+  box-shadow: 0 4px 16px rgba(0, 84, 166, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Sidebar nav item */
+.nav-item {
+  transition: background 0.15s ease, color 0.15s ease, padding-left 0.15s ease;
+}
+.nav-item:hover {
+  padding-left: 16px !important;
+}
+
+/* Spinner intégré (réutilisable sans JS) */
+.spinner {
+  width: 20px; height: 20px;
+  border: 2.5px solid rgba(0,84,166,0.2);
+  border-top-color: #0054A6;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+

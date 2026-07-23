@@ -19,16 +19,21 @@ export default function DataTable<T>({
   columns, rows, loading = false, emptyMessage = "Aucune donnée disponible.", rowKey,
 }: DataTableProps<T>) {
   return (
-    <div style={{
-      background: "#FFFFFF",
-      border: "1px solid #E8ECF0",
-      borderRadius: 12,
-      overflow: "hidden",
-      boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-    }}>
+    <div
+      className="anim-fade-up"
+      style={{
+        background: "#FFFFFF",
+        border: "1px solid #E8ECF0",
+        borderRadius: 12,
+        overflow: "hidden",
+        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+      }}
+    >
       {loading ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0" }}>
-          <Loader2 size={22} className="animate-spin" style={{ color: "#0693E3" }} />
+        <div style={{ padding: "24px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="skeleton" style={{ height: 40, borderRadius: 8, opacity: 1 - i * 0.12 }} />
+          ))}
         </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
@@ -62,12 +67,14 @@ export default function DataTable<T>({
                 </tr>
               ) : (
                 rows.map((row, i) => (
-                  <tr key={rowKey(row)} style={{
-                    borderBottom: i < rows.length - 1 ? "1px solid #F1F5F9" : "none",
-                    transition: "background 0.1s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#FAFBFC")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  <tr
+                    key={rowKey(row)}
+                    className="table-row-hover"
+                    style={{
+                      borderBottom: i < rows.length - 1 ? "1px solid #F1F5F9" : "none",
+                      animation: `fadeIn 0.2s ease both`,
+                      animationDelay: `${Math.min(i * 0.025, 0.3)}s`,
+                    }}
                   >
                     {columns.map((col) => (
                       <td key={col.key} style={{

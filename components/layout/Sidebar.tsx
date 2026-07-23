@@ -14,21 +14,25 @@ const NAV = [
   { href: "/import",       label: "Import",       icon: Upload },
 ];
 
-const BLUE   = "#0693E3";
+const BLUE   = "#0054A6";
 const ORANGE = "#E96805";
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside style={{
-      position: "fixed", top: 0, left: 0,
-      width: 240, height: "100vh",
-      background: "#FFFFFF",
-      borderRight: "1px solid #E8ECF0",
-      display: "flex", flexDirection: "column",
-      zIndex: 50,
-    }}>
+    <aside
+      className="anim-slide-left"
+      style={{
+        position: "fixed", top: 0, left: 0,
+        width: 240, height: "100vh",
+        background: "#FFFFFF",
+        borderRight: "1px solid #E8ECF0",
+        display: "flex", flexDirection: "column",
+        zIndex: 50,
+        boxShadow: "2px 0 8px rgba(0,84,166,0.04)",
+      }}
+    >
       {/* Logo */}
       <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #E8ECF0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -64,18 +68,18 @@ export default function Sidebar() {
           const active = pathname === href;
           return (
             <Link key={href} href={href} style={{ textDecoration: "none" }}>
-              <div style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "9px 12px", borderRadius: 8, marginBottom: 2,
-                background: active ? BLUE : "transparent",
-                color: active ? "#FFFFFF" : "#4A5568",
-                fontWeight: active ? 600 : 500,
-                fontSize: 13,
-                transition: "background 0.15s, color 0.15s",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "#F0F8FF"; }}
-              onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+              <div
+                className="nav-item"
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "9px 12px", borderRadius: 8, marginBottom: 2,
+                  background: active ? BLUE : "transparent",
+                  color: active ? "#FFFFFF" : "#4A5568",
+                  fontWeight: active ? 600 : 500,
+                  fontSize: 13,
+                  cursor: "pointer",
+                  boxShadow: active ? "0 2px 8px rgba(0,84,166,0.25)" : "none",
+                }}
               >
                 <Icon size={15} strokeWidth={active ? 2.5 : 2} />
                 {label}

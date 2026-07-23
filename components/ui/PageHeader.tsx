@@ -1,6 +1,6 @@
 import { LucideIcon } from "lucide-react";
 
-const BLUE   = "#0693E3";
+const BLUE   = "#0054A6";
 const ORANGE = "#E96805";
 
 interface PageHeaderProps {
@@ -16,7 +16,7 @@ export default function PageHeader({ title, description, icon: Icon, accent = "b
   const bg    = accent === "blue" ? "#E8F5FD" : "#FEF3E8";
 
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
+    <div className="anim-fade-up" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{
           width: 44, height: 44, borderRadius: 12,

@@ -13,7 +13,7 @@ import {
   type ChurnStats, type ChurnPrediction, type PaginatedResult,
 } from "@/lib/api";
 
-const BLUE   = "#0693E3";
+const BLUE   = "#0054A6";
 const ORANGE = "#E96805";
 
 const FILTERS = [
@@ -63,7 +63,7 @@ export default function ChurnDashboard() {
   const totalPages = result ? Math.ceil(result.total / 50) : 1;
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 1200 }}>
+    <div className="anim-fade-up" style={{ padding: "32px 36px", maxWidth: 1200 }}>
       <PageHeader
         title="Prédiction du Churn"
         description="Identifiez les clients susceptibles de résilier leur abonnement"
